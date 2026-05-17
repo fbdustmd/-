@@ -70,7 +70,6 @@ int main(int argc, char* argv[]) {
         int src_port = (eth[tcp_start] << 8) | eth[tcp_start + 1];
         int dst_port = (eth[tcp_start + 2] << 8) | eth[tcp_start + 3];
         printf("%d\nDst Port : %d\n", src_port,dst_port);
-        unsigned char y = eth[tcp_start + 4];
         int tcp_header_len = ((eth[tcp_start + 12] >> 4) & 0x0F) * 4;
         int last = tcp_header_len + tcp_start;
         int max = 0;
