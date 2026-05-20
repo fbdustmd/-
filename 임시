@@ -1,0 +1,96 @@
+#include <pcap.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Idernet {
+    unsigned char dst_mac[6];
+    unsigned char src_mac[6];
+    unsigned char type[2];
+} Idernet;
+
+void ider (Idernet idernet){
+    for(int i = 0;i<5;i++){
+        printf("%02x:",idernet.dst_mac[i]);
+    }
+    printf("%02x\n",idernet.dst_mac[5]);
+    for(int i = 0;i<5;i++){
+        printf("%02x:",idernet.src_mac[i]);
+    }
+    printf("%02x\n\n\n\n\n",idernet.src_mac[5]);  
+}
+
+typedef struct Ip{
+    int a[14];
+}Ip;
+
+typedef struct Tcp {
+    int a[14];
+}Tcp;
+
+void usage() {
+    printf("syntax: pcap-test <interface>\n");
+    printf("sample: pcap-test wlan0\n");
+}
+
+typedef struct {
+    char* dev_;
+} Param;
+
+Param param = {
+    .dev_ = NULL
+};
+
+bool parse(Param* param, int argc, char* argv[]) {
+    if (argc != 2) {
+        usage();
+        return false;
+    }
+
+    param->dev_ = argv[1];
+    return true;
+}
+
+int main(int argc, char* argv[]) {
+    unsigned char eth[10000];
+    if (!parse(&param, argc, argv))
+        return -1;
+
+    char errbuf[PCAP_ERRBUF_SIZE];
+
+    pcap_t* pcap = pcap_open_live(param.dev_, BUFSIZ, 1, 1000, errbuf);
+
+    if (pcap == NULL) {
+        fprintf(stderr, "pcap_open_live(%s) return null - %s\n", param.dev_, errbuf);
+        return -1;
+    }
+    while (true) {
+        
+        struct pcap_pkthdr* header;
+        const u_char* packet;
+        
+
+        int res = pcap_next_ex(pcap, &header, &packet);
+       
+
+        if (res == 0)
+            continue;
+
+        if (res == PCAP_ERROR || res == PCAP_ERROR_BREAK) {
+            printf("pcap_next_ex return %d(%s)\n", res, pcap_geterr(pcap));
+            break;
+        }
+
+         memcpy(eth,packet,header->caplen);  
+        Idernet idernet;
+        Ip ip;
+        Tcp tcp;
+        memcpy(idernet.dst_mac, eth, 6);
+        memcpy(idernet.src_mac, eth + 6, 6);
+        memcpy(idernet.type, eth + 12, 2);
+        ider(idernet);
+    }
+
+    pcap_close(pcap);
+}
